@@ -2,19 +2,23 @@ import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Mood } from "../types";
 
 // Get API key from environment
-// Vite's define replaces process.env.API_KEY at build time
-// Also check import.meta.env.VITE_GEMINI_API_KEY (Vite's standard way)
+// Vite automatically exposes VITE_* prefixed variables to import.meta.env
+// Priority: import.meta.env.VITE_GEMINI_API_KEY > process.env.API_KEY > process.env.GEMINI_API_KEY
 const getApiKey = (): string => {
-  // Try multiple sources for the API key
+  // Try multiple sources for the API key (in order of priority)
   const apiKey = 
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    import.meta.env.GEMINI_API_KEY ||
     (typeof process !== 'undefined' && process.env?.API_KEY) || 
     (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
     '';
   
   // Check if API key is valid (not empty, not the string "undefined")
   if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
-    throw new Error('GEMINI_API_KEY is not set. Please create a .env file in the at-tweet-rewriter directory with: GEMINI_API_KEY=your_api_key');
+    const errorMsg = typeof window !== 'undefined' 
+      ? 'GEMINI_API_KEY is not set. Please configure VITE_GEMINI_API_KEY in your Vercel environment variables.'
+      : 'GEMINI_API_KEY is not set. Please create a .env file with: VITE_GEMINI_API_KEY=your_api_key';
+    throw new Error(errorMsg);
   }
   
   return apiKey;
