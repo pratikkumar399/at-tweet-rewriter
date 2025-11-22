@@ -1,9 +1,34 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Mood } from "../types";
 
-// Initialize Gemini Client
-// Note: process.env.API_KEY is expected to be available
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Get API key from environment
+// Vite's define replaces process.env.API_KEY at build time
+// Also check import.meta.env.VITE_GEMINI_API_KEY (Vite's standard way)
+const getApiKey = (): string => {
+  // Try multiple sources for the API key
+  const apiKey = 
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) ||
+    (typeof process !== 'undefined' && process.env?.API_KEY) || 
+    (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) ||
+    '';
+  
+  // Check if API key is valid (not empty, not the string "undefined")
+  if (!apiKey || apiKey === 'undefined' || apiKey.trim() === '') {
+    throw new Error('GEMINI_API_KEY is not set. Please create a .env file in the at-tweet-rewriter directory with: GEMINI_API_KEY=your_api_key');
+  }
+  
+  return apiKey;
+};
+
+// Lazy initialization - only create client when needed
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = (): GoogleGenAI => {
+  if (!aiInstance) {
+    aiInstance = new GoogleGenAI({ apiKey: getApiKey() });
+  }
+  return aiInstance;
+};
 
 const MODEL_NAME = 'gemini-2.5-flash';
 
@@ -24,6 +49,7 @@ export const rewriteSingleTweet = async (text: string, mood: Mood): Promise<stri
       Original Tweet: "${text}"
     `;
 
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: prompt,
@@ -65,6 +91,7 @@ export const rewriteThread = async (text: string, mood: Mood): Promise<string[]>
       description: "Array of tweets representing the thread",
     };
 
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: prompt,
