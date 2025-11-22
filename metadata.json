@@ -1,0 +1,5 @@
+{
+  "name": "AI Tweet Rewriter",
+  "description": "Instantly rewrite tweets in various moods (Funny, Professional, Angry, Wholesome) using AI. Supports single tweets and threads.",
+  "requestFramePermissions": []
+}
